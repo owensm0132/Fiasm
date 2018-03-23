@@ -69,7 +69,7 @@ Entities:
 	Email
 	Password
 	Cellphone - for two factor authentication
-	Roles - list of roles the user has
+	Claims - list of claims the user has
 
 - Role
 	RoleId
@@ -126,3 +126,12 @@ Entities:
 
 implementation details:
 used the following reference to get angular o version 5: https://www.codeproject.com/Articles/1221503/Angular-and-NET-Core-with-Visual-Studio
+
+
+The architecture is pretty straightforward. There are 3 modules (3 tiers);
+	Presentations: the Fiasm project
+	Domain (business logic): the Fiasm-Core project
+	Repository (presistence): the Fiasm-Reposity project
+
+The depedencies will be inwardly directed to the domain layer. To achieve this IOC with DI will be used
+between the Presitence layer and the Domain laye.

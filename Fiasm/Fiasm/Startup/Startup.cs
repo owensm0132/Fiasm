@@ -2,9 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Fiasm.Core.ServiceInterfaces;
+using Fiasm.Core.Services;
+using Fiasm.Repository;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.Webpack;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,6 +27,17 @@ namespace Fiasm
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+
+            // Add Fiasm-Core authentication service
+            //services.AddMyAuthenitcationService(Configuration, "DefaultConnection");
+            services.AddScoped<IUserService, UserService>();
+
+
+            //var connectionStr = Configuration.GetConnectionString("DefaultConnection");
+            //services.AddDbContext<FiasmDbContext>(options =>
+            //    options.UseSqlServer(connectionStr));
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

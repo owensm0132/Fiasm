@@ -1,0 +1,9 @@
+
+# ignore these folders
+bin/
+obj/
+.vs/
+
+# ignore these file extensions
+*.csproj.user
+*.suo
