@@ -13,6 +13,6 @@ namespace Fiasm.Repository.EntityModels
 
         public string AppUserClaimValue { get; set; }
 
-        public virtual AppClaim Claim { get; set; }
+        public virtual AppClaim AppClaim { get; set; }
     }
 }

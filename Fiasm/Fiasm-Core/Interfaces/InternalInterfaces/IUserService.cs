@@ -8,8 +8,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fiasm.Core.ServiceInterfaces
+namespace Fiasm.Core.Interfaces.InternalInterfaces
 {
+    /// <summary>
+    /// This object will provide the user services to the business logic of the application.
+    /// </summary>
     public interface IUserService
     {
         #region authentication

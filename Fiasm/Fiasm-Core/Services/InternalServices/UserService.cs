@@ -1,11 +1,9 @@
-﻿using Fiasm.Core.ServiceInterfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
 using System.Security.Principal;
 using System.Security.Claims;
 using Fiasm.Core.Models.UserModels;
@@ -13,17 +11,16 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Fiasm.Repository.EntityModels;
+using Fiasm.Core.Interfaces.InternalInterfaces;
 
 namespace Fiasm.Core.Services
 {
-    public class UserService : IUserService
+    internal class UserService : IUserService
     {
-        private IConfiguration configuration;
         private IHasher hasher;
 
-        public UserService(IConfiguration configuration, IHasher hasher )
+        public UserService(IHasher hasher)
         {
-            this.configuration = configuration;
             this.hasher = hasher;
         }
 
@@ -53,7 +50,7 @@ namespace Fiasm.Core.Services
             using (var db = new Fiasm.Repository.FiasmDbContext())
             {
                 var dbUser = await db.AppUsers.FirstOrDefaultAsync(u => u.LoginName == user.LoginName);
-                return dbUser?.AppUserClaims.Any( c => c.Claim.ClaimType == claimType) ?? false;
+                return dbUser?.AppUserClaims.Any( c => c.AppClaim.ClaimType == claimType) ?? false;
             }
         }
 
@@ -62,7 +59,7 @@ namespace Fiasm.Core.Services
             using (var db = new Fiasm.Repository.FiasmDbContext())
             {
                 var dbUser = await db.AppUsers.FirstOrDefaultAsync(u => u.LoginName == user.LoginName);
-                return dbUser?.AppUserClaims.FirstOrDefault(c => c.Claim.ClaimType == claimType)
+                return dbUser?.AppUserClaims.FirstOrDefault(c => c.AppClaim.ClaimType == claimType)
                     ?.AppUserClaimValue;
             }
         }
@@ -74,7 +71,7 @@ namespace Fiasm.Core.Services
                 var dbUser = await db.AppUsers.FirstOrDefaultAsync(u => u.LoginName == user.LoginName);
                 return dbUser?.AppUserClaims.Select(auc => new ClaimModel
                 {
-                    ClaimType = auc.Claim.ClaimType,
+                    ClaimType = auc.AppClaim.ClaimType,
                     ClaimValue = auc.AppUserClaimValue
                 }).ToList();   
             }
@@ -99,14 +96,14 @@ namespace Fiasm.Core.Services
                     throw new Exception("Claim not found");
                 }
 
-                if(dbUser.AppUserClaims.Any(auc => auc.Claim.ClaimType == claim.ClaimType))
+                if(dbUser.AppUserClaims.Any(auc => auc.AppClaim.ClaimType == claim.ClaimType))
                 {
                     throw new Exception($"User already has claim type '{claim.ClaimType}'");
                 }
 
                 dbUser.AppUserClaims.Add(new AppUserClaim
                 {
-                    Claim = dbClaim,
+                    AppClaim = dbClaim,
                     AppUserClaimValue = claim.ClaimValue
                 });
                 await db.SaveChangesAsync();
@@ -142,7 +139,7 @@ namespace Fiasm.Core.Services
                 {
                     throw new Exception($"Claim type '{claim.ClaimType}' does not exist");
                 }
-                if(!db.AppUsers.Any(u => u.AppUserClaims.Any(c => c.Claim.ClaimType == claim.ClaimType)))
+                if(!db.AppUsers.Any(u => u.AppUserClaims.Any(c => c.AppClaim.ClaimType == claim.ClaimType)))
                 {
                     // it is safe to delete this claim because no users have this claim
                     db.AppClaims.Remove(new AppClaim
@@ -166,12 +163,12 @@ namespace Fiasm.Core.Services
                     throw new Exception($"Claim type '{claim.ClaimType}' does not exist");
                 }
                 var usersWithClaim = db.AppUsers
-                    .Where(u => u.AppUserClaims.Any(c => c.Claim.ClaimType == claim.ClaimType));
+                    .Where(u => u.AppUserClaims.Any(c => c.AppClaim.ClaimType == claim.ClaimType));
                 foreach (var user in usersWithClaim)
                 {
                     // it is not possible for a single user to have more than one claim with the same claim value
                     user.AppUserClaims.Remove(user.AppUserClaims
-                        .Single(auc => auc.Claim.ClaimType == claim.ClaimType));
+                        .Single(auc => auc.AppClaim.ClaimType == claim.ClaimType));
                 }
                 db.AppClaims.Add(new AppClaim
                 {
@@ -196,7 +193,7 @@ namespace Fiasm.Core.Services
 
                 dbUser.AppUserClaims.Add(new AppUserClaim
                 {
-                    Claim = dbClaim,
+                    AppClaim = dbClaim,
                     AppUserClaimValue = claim.ClaimValue
                 });
                 
@@ -213,10 +210,10 @@ namespace Fiasm.Core.Services
             {
                 var dbUser = await db.AppUsers.FirstOrDefaultAsync(u =>
                     u.LoginName == user.LoginName &&
-                    u.AppUserClaims.Any(auc => auc.Claim.ClaimType == claim.ClaimType));
+                    u.AppUserClaims.Any(auc => auc.AppClaim.ClaimType == claim.ClaimType));
                 if (dbUser == null) throw new Exception($"Could not find user '{user.LoginName}' with claim type '{claim.ClaimType}'");
 
-                dbUser.AppUserClaims.Single(auc => auc.Claim.ClaimType == claim.ClaimType)
+                dbUser.AppUserClaims.Single(auc => auc.AppClaim.ClaimType == claim.ClaimType)
                     .AppUserClaimValue = claim.ClaimValue;
                 
                 await db.SaveChangesAsync();

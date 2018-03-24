@@ -1,9 +1,9 @@
-﻿This application is intended to be able to support the inventory and sales management
+﻿This application is intended to be to support the inventory and sales management
 needs for a small retail business - 1 to 10 employees. It is generic as most retiail
 businesses have the same needs.
 
 The use of a .net framework with EF code first and angular front-end was not derived from
-an architectural solutions, rather it was chosen because I wanted to learn it better. The
+an architectural requirements, rather it was chosen because I wanted to learn it better. The
 rest of this document is meant to derive the entity models and architecture modules based 
 on the use cases.
 
@@ -11,6 +11,17 @@ Architecture
 
 Use Cases:
 
+- view/edit users
+	1. the user can search for existing application users and view their information
+	2. the user (if they are authorized to) can change the existing user's information or delete their account
+	3. the user (if they are authorized to) can create new users. I hate passwords sent to me in email
+		so the new user will recieve a text message indicating (if the application is configured with an sms
+		service in the configuration) or the account manager will have to communicate with the new user the
+		login information. The first time a user logs in they will be prompted to change their password
+	4. all users will have to enter a user name and password in order to login. No support will be implmented
+		for third party authentication - its too tacky.
+	5. if the user does not remember their password the can get it reset using either an email link or a
+		text message (if the application is configured for one)
 
 - view/edit inventory items
 	1. the user can search for inventory items bases on item properties
@@ -71,8 +82,9 @@ Entities:
 	Cellphone - for two factor authentication
 	Claims - list of claims the user has
 
-- Role
-	RoleId
+- Claim
+	ClaimType,
+	ClaimValue
 
 -Item - items are things that are purchased in whole from venders
 	ItemID
@@ -128,10 +140,14 @@ implementation details:
 used the following reference to get angular o version 5: https://www.codeproject.com/Articles/1221503/Angular-and-NET-Core-with-Visual-Studio
 
 
-The architecture is pretty straightforward. There are 3 modules (3 tiers);
+The architecture is pretty straightforward. There are 3 modules (3 layers - 2 tiers);
 	Presentations: the Fiasm project
 	Domain (business logic): the Fiasm-Core project
 	Repository (presistence): the Fiasm-Reposity project
 
-The depedencies will be inwardly directed to the domain layer. To achieve this IOC with DI will be used
-between the Presitence layer and the Domain laye.
+Even though "uncle Bob" recommends that applications should have their dependency graph point inward - toward the
+core entities, I feel that creating an interface layer between EF and the core business logic is not needed.
+So, this project will have the standard top down dependency graph; presentation -> business logic -> data persistence.
+The main thing to keep in mind when architecting is to separate out the things that change allot (ie. view models) 
+from things that do not (or should not) change allot (ie entity models), and to try really hard to create interfaces
+that do not change much through the development process.

@@ -13,5 +13,6 @@ namespace Fiasm.Core.Models.UserModels
         public string LoginName { get; set; }
         public string EmailAddress { get; set; }
         public string PhoneNumber { get; set; }
+        public IEnumerable<ClaimModel> Claims { get; set; }
     }
 }

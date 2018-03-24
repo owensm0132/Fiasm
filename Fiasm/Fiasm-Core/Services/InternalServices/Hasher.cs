@@ -1,11 +1,9 @@
-﻿using Fiasm.Core.ServiceInterfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
+using Fiasm.Core.Interfaces.InternalInterfaces;
+
 namespace Fiasm.Core.Services
 {
-    public class Hasher : IHasher
+    internal class Hasher : IHasher
     {
         public string HashPassword(string userName, string password)
         {

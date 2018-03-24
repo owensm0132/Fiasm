@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Fiasm.Core.ServiceInterfaces
+namespace Fiasm.Core.Interfaces.InternalInterfaces
 {
-    public interface IHasher
+    internal interface IHasher
     {
         string HashPassword(string userName, string password);
         bool VerifyPassword(string userName, string password, string hashedPassword);

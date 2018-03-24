@@ -9,4 +9,9 @@ namespace Fiasm.Core.Models.UserModels
         public string ClaimType { get; set; }
         public string ClaimValue { get; set; }
     }
+
+    internal enum ClaimTypes
+    {
+        AuthorizedToDoUserAdministration
+    }
 }
