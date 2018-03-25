@@ -30,6 +30,8 @@ namespace Fiasm.Core.Interfaces.ExternalInterfaces
 
         Task<ResponseModel> CreateNewUserAsync(UserModel loggedInUser, UserModel newUser, string password);
 
+        Task<IEnumerable<ClaimModel>> GetClaimsAsync(UserModel loggedInUser);
+
         Task<IEnumerable<ClaimModel>> GetUserClaimsAsync(UserModel loggedInUser);
 
         Task<ResponseModel> AddClaimToUserAsync(UserModel loggedInUser, UserModel userToModify, ClaimModel claimToAdd);

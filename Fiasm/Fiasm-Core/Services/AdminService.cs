@@ -53,7 +53,7 @@ namespace Fiasm.Core.Services.ExternalServices
             {
                 cfg.CreateMap<User, UserModel>();
                 cfg.CreateMap<UserModel, User>()
-                    .ForMember(dest => dest.Claims, opt => opt.Ignore())
+                    .ForMember(dest => dest.UserClaims, opt => opt.Ignore())
                     .ForMember(dest => dest.HashedPassword, opt => opt.Ignore())
                     .ForMember(dest => dest.IsPasswordReseting, opt => opt.Ignore())
                     .ForMember(dest => dest.IsPasswordResetRequired, opt => opt.Ignore())
@@ -61,7 +61,7 @@ namespace Fiasm.Core.Services.ExternalServices
                     .ForMember(dest => dest.UserId, opt => opt.Ignore());
                 cfg.CreateMap<Claim, ClaimModel>();
                 cfg.CreateMap<ClaimModel, Claim>()
-                    .ForMember(dest => dest.Users, opt => opt.Ignore())
+                    .ForMember(dest => dest.UserClaims, opt => opt.Ignore())
                     .ForMember(dest => dest.ClaimId, opt => opt.Ignore());
             }).CreateMapper() ;
 
@@ -303,7 +303,7 @@ namespace Fiasm.Core.Services.ExternalServices
             return response;
         }
 
-        public async Task<IEnumerable<ClaimModel>> GetUserClaimsAsync(UserModel loggedInUser)
+        public async Task<IEnumerable<ClaimModel>> GetClaimsAsync(UserModel loggedInUser)
         {
             FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
 
@@ -315,6 +315,18 @@ namespace Fiasm.Core.Services.ExternalServices
             return await dbContext.Claims.Select(c => mapper.Map<ClaimModel>(c)).ToListAsync();
         }
 
+        public async Task<IEnumerable<ClaimModel>> GetUserClaimsAsync(UserModel loggedInUser)
+        {
+            FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
+
+            var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+
+            // only a user admin should be able to see permissions
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
+
+            return currentUser.UserClaims.Select(c => mapper.Map<ClaimModel>(c));
+        }
+
         public async Task<ResponseModel> AddClaimToUserAsync(UserModel loggedInUser, UserModel userToModify, ClaimModel claimToAdd)
         {
             FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
@@ -324,17 +336,27 @@ namespace Fiasm.Core.Services.ExternalServices
             var response = new ResponseModel { Success = false };
 
             var modifiedUser = await GetDbUserFromUserModelByUserNameAsync(userToModify);
+            var claim = await dbContext.Claims.FirstOrDefaultAsync(c => c.ClaimType == claimToAdd.ClaimType);
+
             if (modifiedUser == null)
             {
                 response.ErrorMessage = $"Could not find user '{userToModify.UserName}'.";
             }
-            else if (modifiedUser.Claims.Any(c => c.ClaimType == claimToAdd.ClaimType))
+            else if (claim == null)
+            {
+                response.ErrorMessage = $"Could not claim type '{claimToAdd.ClaimType}'.";
+            }
+            else if (modifiedUser.UserClaims.Any(c => c.Claim.ClaimType == claimToAdd.ClaimType))
             {
                 response.ErrorMessage = $"User '{userToModify.UserName}' already has claim '{claimToAdd.ClaimType}'.";
             }
             else
             {
-                modifiedUser.Claims.Add(mapper.Map<ClaimModel, Claim>(claimToAdd));
+                dbContext.UserClaims.Add(new UserClaim
+                {
+                    User = modifiedUser,
+                    Claim = claim
+                });
                 dbContext.UserChangeLogs.Add(new UserChangeLog
                 {
                     ChangedByUserId = currentUser.UserId,
@@ -358,18 +380,24 @@ namespace Fiasm.Core.Services.ExternalServices
             var response = new ResponseModel { Success = false };
 
             var modifiedUser = await GetDbUserFromUserModelByUserNameAsync(userToModify);
+            var claim = await dbContext.Claims.FirstOrDefaultAsync(c => c.ClaimType == claimToRemove.ClaimType);
+            var userClaim = modifiedUser.UserClaims.FirstOrDefault(c => c.Claim.ClaimType == claimToRemove.ClaimType);
+
             if (modifiedUser == null)
             {
                 response.ErrorMessage = $"Could not find user '{userToModify.UserName}'.";
             }
-            else if (!modifiedUser.Claims.Any(c => c.ClaimType == claimToRemove.ClaimType))
+            else if (claim == null)
             {
-                response.ErrorMessage = $"User '{userToModify.UserName}' does not have claim '{claimToRemove.ClaimType}'.";
+                response.ErrorMessage = $"Could not find claim type '{claimToRemove.ClaimType}'.";
+            }
+            else if (userClaim == null)
+            {
+                response.ErrorMessage = $"The user '{modifiedUser.UserName}' does not have claim type '{claimToRemove.ClaimType}'.";
             }
             else
             {
-                var claim = modifiedUser.Claims.First(c => c.ClaimType == claimToRemove.ClaimType);
-                modifiedUser.Claims.Remove(claim);
+                dbContext.UserClaims.Remove(userClaim);
                 dbContext.UserChangeLogs.Add(new UserChangeLog
                 {
                     ChangedByUserId = currentUser.UserId,

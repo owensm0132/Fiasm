@@ -25,12 +25,10 @@ namespace Fiasm.Data.EntityModels
         public bool IsActive { get; set; }
 
         // Foreign keys
-        public ICollection<Claim> Claims { get; set; }
+        public ICollection<UserClaim> UserClaims { get; set; }
         public User()
         {
-            Claims = new HashSet<Claim>();
+            UserClaims = new HashSet<UserClaim>();
         }
-
-
     }
 }

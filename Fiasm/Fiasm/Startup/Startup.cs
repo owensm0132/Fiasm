@@ -26,7 +26,7 @@ namespace Fiasm
             //services.AddMyAuthenitcationService(Configuration, "DefaultConnection");
             //services.AddScoped<IUserService, UserService>();
 
-
+            services.AddEntityFrameworkSqlServer();
             var connectionStr = Configuration.GetConnectionString("DefaultConnection");
             services.AddDbContext<FiasmDbContext>(options => options.UseSqlServer(connectionStr));
 
