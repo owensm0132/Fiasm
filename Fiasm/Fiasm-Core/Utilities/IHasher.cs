@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Fiasm.Core.Interfaces.InternalInterfaces
 {
-    internal interface IHasher
+    public interface IHasher
     {
         string HashPassword(string userName, string password);
         bool VerifyPassword(string userName, string password, string hashedPassword);

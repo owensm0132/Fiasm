@@ -8,6 +8,7 @@ namespace Fiasm.Data
         public FiasmDbContext(DbContextOptions options) : base(options) { }
         public DbSet<User> Users { get; set; }
         public DbSet<Claim> Claims { get; set; }
+        public DbSet<UserChangeLog> UserChangeLogs { get; set; }
 
     }
 }

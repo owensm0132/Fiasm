@@ -8,9 +8,9 @@ namespace Fiasm.Data.EntityModels
     public class Claim
     {
         public int ClaimId { get; set; }
-        [Required, StringLength(64)]
+        [Required, MaxLength(64)]
         public string ClaimType { get; set; }
-        [Required, StringLength(64)]
+        [Required, MaxLength(64)]
         public string ClaimValue { get; set; }
 
         // Foreign keys

@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Fiasm.Core.ServiceInterfaces;
-using Fiasm.Core.Services;
-using Fiasm.Repository;
+using Fiasm.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.Webpack;
@@ -30,12 +24,11 @@ namespace Fiasm
 
             // Add Fiasm-Core authentication service
             //services.AddMyAuthenitcationService(Configuration, "DefaultConnection");
-            services.AddScoped<IUserService, UserService>();
+            //services.AddScoped<IUserService, UserService>();
 
 
-            //var connectionStr = Configuration.GetConnectionString("DefaultConnection");
-            //services.AddDbContext<FiasmDbContext>(options =>
-            //    options.UseSqlServer(connectionStr));
+            var connectionStr = Configuration.GetConnectionString("DefaultConnection");
+            services.AddDbContext<FiasmDbContext>(options => options.UseSqlServer(connectionStr));
 
 
         }

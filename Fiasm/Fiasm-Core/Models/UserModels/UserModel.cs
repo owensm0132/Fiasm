@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -8,11 +9,11 @@ namespace Fiasm.Core.Models.UserModels
 {
     public class UserModel
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string LoginName { get; set; }
+        [StringLength(64)]
+        public string UserName { get; set; }
+        [EmailAddress]
         public string EmailAddress { get; set; }
+        [Phone]
         public string PhoneNumber { get; set; }
-        public IEnumerable<ClaimModel> Claims { get; set; }
     }
 }

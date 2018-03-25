@@ -3,18 +3,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Fiasm.Core.ServiceInterfaces;
+using Fiasm.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fiasm.Controllers
 {
     public class HomeController : Controller
     {
-        IUserService userService = null;
-
-        public HomeController(IUserService userService)
+        public HomeController()
         {
-            this.userService = userService;
         }
 
         public IActionResult Index()
