@@ -4,6 +4,7 @@ bin/
 obj/
 .vs/
 Migrations/
+packages/
 
 # ignore these file extensions
 *.csproj.user
