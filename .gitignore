@@ -9,3 +9,4 @@ packages/
 # ignore these file extensions
 *.csproj.user
 *.suo
+appsettings_secrets.json
