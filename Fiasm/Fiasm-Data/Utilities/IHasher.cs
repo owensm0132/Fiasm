@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Fiasm.Core.Interfaces.InternalInterfaces
+namespace Fiasm.Data.Utilities
 {
     public interface IHasher
     {
