@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="2.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
@@ -15,9 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Fiasm-Core\Fiasm-Core.csproj" />
-    <ProjectReference Include="..\Fiasm-Data\Fiasm-Data.csproj" />
-    <ProjectReference Include="..\Fiasm\Fiasm.csproj" />
+    <ProjectReference Include="..\Fiasm.Core\Fiasm.Core.csproj" />
+    <ProjectReference Include="..\Fiasm.Data\Fiasm.Data.csproj" />
   </ItemGroup>
 
 </Project>

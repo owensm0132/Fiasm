@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Fiasm-Data\Fiasm-Data.csproj" />
+    <ProjectReference Include="..\Fiasm.Data\Fiasm.Data.csproj" />
   </ItemGroup>
 
 </Project>

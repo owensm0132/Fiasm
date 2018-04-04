@@ -562,7 +562,7 @@ namespace Fiasm.UnitTests
                 var user = AddUser(dbContext, userName, $"test@test.com", password, hasher);
                 Assert.NotNull(user);
                 AddUserClaims(dbContext, userName, new List<string> { authUserClaim, authAdminUserClaim });
-                
+
                 // create other user
                 var otherUser = AddUser(dbContext, otherUserName, $"testOther@test.com", password, hasher);
                 Assert.NotNull(otherUser);
@@ -598,7 +598,7 @@ namespace Fiasm.UnitTests
                 }
 
                 Assert.False(didThrow);
-                Assert.True(dbContext.Users.FirstOrDefault(u => u.UserName == otherUserName)?.IsActive??false);
+                Assert.True(dbContext.Users.FirstOrDefault(u => u.UserName == otherUserName)?.IsActive ?? false);
             }
         }
         #endregion
@@ -1378,7 +1378,7 @@ namespace Fiasm.UnitTests
                 // create logged in user
                 var user = AddUser(dbContext, userName, $"test@test.com", password, hasher);
                 Assert.NotNull(user);
-                AddUserClaims(dbContext, userName, new List<string> { authUserClaim , authAdminUserClaim });
+                AddUserClaims(dbContext, userName, new List<string> { authUserClaim, authAdminUserClaim });
 
                 // create other user
                 var otherUser = AddUser(dbContext, otherUserName, $"testOther@test.com", password, hasher);
@@ -1448,7 +1448,7 @@ namespace Fiasm.UnitTests
                 // create other user
                 var otherUser = AddUser(dbContext, otherUserName, $"testOther@test.com", password, hasher);
                 Assert.NotNull(otherUser);
-                AddUserClaims(dbContext, otherUserName, new List<string> { authUserClaim , authAdminUserClaim });
+                AddUserClaims(dbContext, otherUserName, new List<string> { authUserClaim, authAdminUserClaim });
 
                 AdminService adminService = new AdminService(dbContext, hasher);
                 var loggedInUser = adminService.AuthenticateUserAsync(new LoginModel
@@ -1472,7 +1472,7 @@ namespace Fiasm.UnitTests
                             ClaimType = authAdminUserClaim,
                             ClaimValue = "true"
                         }).Result;
-                    Assert.True(response?.Success??false);
+                    Assert.True(response?.Success ?? false);
                 }
                 catch
                 {
@@ -1597,6 +1597,6 @@ namespace Fiasm.UnitTests
             }
         }
         #endregion
-        //RemoveClaimFromUserAsync
+
     }
 }

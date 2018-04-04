@@ -5,9 +5,9 @@ VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fiasm", "Fiasm\Fiasm.csproj", "{FCA788DD-DF4C-4B30-B18B-C24075CD2ABD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fiasm-Data", "Fiasm-Data\Fiasm-Data.csproj", "{EC8BDB51-D0B6-4DE8-BDDA-71B5A6B276F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fiasm.Data", "Fiasm.Data\Fiasm.Data.csproj", "{EC8BDB51-D0B6-4DE8-BDDA-71B5A6B276F9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fiasm-Core", "Fiasm-Core\Fiasm-Core.csproj", "{5B755BFD-5198-4BDA-A7DA-14E03AE60702}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fiasm.Core", "Fiasm.Core\Fiasm.Core.csproj", "{5B755BFD-5198-4BDA-A7DA-14E03AE60702}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fiasm.UnitTests", "Fiasm.UnitTests\Fiasm.UnitTests.csproj", "{393FFB18-A1C6-4135-9859-23A8E03BB29F}"
 EndProject

@@ -30,8 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Fiasm-Core\Fiasm-Core.csproj" />
-    <ProjectReference Include="..\Fiasm-Data\Fiasm-Data.csproj" />
+    <ProjectReference Include="..\Fiasm.Core\Fiasm.Core.csproj" />
+    <ProjectReference Include="..\Fiasm.Data\Fiasm.Data.csproj" />
   </ItemGroup>
 
   <Target Name="DebugRunWebpack" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('wwwroot\dist') ">
