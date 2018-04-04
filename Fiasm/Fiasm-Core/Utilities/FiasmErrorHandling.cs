@@ -16,8 +16,12 @@ namespace Fiasm.Core.Utilities
 
         public static void VerifyUserPermission(Fiasm.Data.EntityModels.User user, ClaimTypes claimType )
         {
-            if (!user.UserClaims.Any(c => c.Claim.ClaimType == ClaimTypes.AuthorizedToDoUserAdministration.ToString()))
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            if (!user.UserClaims.Any(c => c.Claim.ClaimType == claimType.ToString()))
+            {
                 throw new InvalidCredentialException("You do not have permission.");
+            }
         }
     }
 }
