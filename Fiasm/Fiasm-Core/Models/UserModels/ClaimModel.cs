@@ -15,6 +15,7 @@ namespace Fiasm.Core.Models.UserModels
 
     public enum ClaimTypes
     {
+        AuthorizedUser,
         AuthorizedToDoUserAdministration
     }
 }
