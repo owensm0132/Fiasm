@@ -14,12 +14,6 @@ namespace Fiasm.Core.Interfaces.ExternalInterfaces
 
         Task<IEnumerable<UserModel>> GetUsersAsync(UserModel loggedInUser);
 
-        /// <summary>
-        /// Change the user email or phone number
-        /// </summary>
-        /// <param name="loggedInUser"></param>
-        /// <param name="modifiedUser"></param>
-        /// <returns></returns>
         Task<ResponseModel> UpdateUserAsync(UserModel loggedInUser, UserModel modifiedUser);
 
         Task<ResponseModel> ActivateUserAsync(UserModel loggedInUser, UserModel userToActivate);

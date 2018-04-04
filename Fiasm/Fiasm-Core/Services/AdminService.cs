@@ -1,5 +1,4 @@
 ﻿using Fiasm.Core.Interfaces.ExternalInterfaces;
-using Fiasm.Core.Interfaces.InternalInterfaces;
 using Fiasm.Core.Models.RequestModels;
 using Fiasm.Core.Models.UserModels;
 using System;
@@ -13,9 +12,14 @@ using Fiasm.Core.Utilities;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using Fiasm.Data.Utilities;
+using System.Security.Authentication;
 
 namespace Fiasm.Core.Services.ExternalServices
 {
+    /// <summary>
+    /// The AdminService class is responsible for authenticating users and user actions.
+    /// </summary>
     public class AdminService : IAdminService
     {
         private readonly FiasmDbContext dbContext;
@@ -35,12 +39,24 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(userModel);
             return await dbContext.Users.SingleOrDefaultAsync(u => u.EmailAddress == userModel.EmailAddress);
         }
-        
+
+        /// <summary>
+        /// Gets the data entity User object from the UserModel object. If the User is not found or
+        /// deactivated then an excetpion is throw; a ArgumentException or a InvalidCredentialException.
+        /// </summary>
+        /// <param name="userModel"></param>
+        /// <returns></returns>
         private async Task<User> GetLoggedInUserFromUserModelAsync(UserModel userModel)
         {
             var dbUser = await GetDbUserFromUserModelByUserNameAsync(userModel);
             if (dbUser == null)
+            {
                 throw new ArgumentException($"Could not find logged in user '{userModel.UserName}'.");
+            }
+            if(!dbUser.IsActive)
+            {
+                throw new InvalidCredentialException($"The user '{userModel.UserName}' has been deactivated.");
+            }
             return dbUser;
         }
         #endregion
@@ -68,20 +84,34 @@ namespace Fiasm.Core.Services.ExternalServices
             this.hasher = hasher;
         }
 
+        /// <summary>
+        /// This function will check the data layer for a user with the same user name, verify the
+        /// password is correct, and that the user is active. If all three conditions pass then 
+        /// a new UserModel is created and returned, null is returned otherwise.
+        /// </summary>
+        /// <param name="login"></param>
+        /// <returns></returns>
         public async Task<UserModel> AuthenticateUserAsync(LoginModel login)
         {
             FiasmErrorHandling.VerifyArgNotNull(login);
-
+            
             UserModel user = null;
 
             var dbUser = await dbContext.Users.FirstOrDefaultAsync(u => u.UserName == login.LoginName);
             if (dbUser != null && hasher.VerifyPassword(
                 login.LoginName, login.PassWord, dbUser.HashedPassword))
             {
-                user = new UserModel
+                // make sure the user has the AuthorizedUser claim and is active
+                if (dbUser.IsActive && 
+                    dbUser.UserClaims.FirstOrDefault(uc => uc.Claim.ClaimType == ClaimTypes.AuthorizedUser.ToString()) != null)
                 {
-                    UserName = login.LoginName
-                };
+                    user = new UserModel
+                    {
+                        UserName = dbUser.UserName,
+                        EmailAddress = dbUser.EmailAddress,
+                        PhoneNumber = dbUser.PhoneNumber
+                    };
+                }
             }
             return user;
         }
@@ -91,11 +121,20 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
 
             var dbUsers = await dbContext.Users.ToListAsync();
             return mapper.Map<IList<User>, IList<UserModel>>(dbUsers);
         }
 
+        /// <summary>
+        /// Change the user email or phone number. This function will throw an InvalidCredentialException
+        /// if the logged in user is trying to change the user information of another user without having
+        /// the user administraction authorization claim.
+        /// </summary>
+        /// <param name="loggedInUser"></param>
+        /// <param name="modifiedUser"></param>
+        /// <returns></returns>
         public async Task<ResponseModel> UpdateUserAsync(UserModel loggedInUser, UserModel modifiedUser)
         {
             FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
@@ -103,11 +142,16 @@ namespace Fiasm.Core.Services.ExternalServices
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
             if(currentUser == null)
-                throw new ArgumentException($"Could not find logged");
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
 
             // if the current user is modifying another user, check the permissions
-            if(loggedInUser.UserName != modifiedUser.UserName)
+            if (loggedInUser.UserName != modifiedUser.UserName)
+            {
                 FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
+            }
 
             var response = new ResponseModel { Success = false };
 
@@ -156,7 +200,11 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(userToActivate);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
-
+            if (currentUser == null)
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
             FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
 
             var response = new ResponseModel { Success = false };
@@ -193,7 +241,12 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(userToDeactivate);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+            if (currentUser == null)
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
 
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
             FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
 
             var response = new ResponseModel { Success = false };
@@ -206,6 +259,10 @@ namespace Fiasm.Core.Services.ExternalServices
             else if(!dbModifiedUser.IsActive)
             {
                 response.ErrorMessage = $"User '{userToDeactivate.UserName} is already deactivated.'";
+            }
+            else if(currentUser.UserName == userToDeactivate.UserName)
+            {
+                response.ErrorMessage = $"User '{userToDeactivate.UserName} cannot deactivated self.'";
             }
             else
             {
@@ -230,7 +287,12 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(deletedUser);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+            if (currentUser == null)
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
 
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
             FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
 
             var response = new ResponseModel { Success = false };
@@ -238,7 +300,11 @@ namespace Fiasm.Core.Services.ExternalServices
             var dbModifiedUser = await GetDbUserFromUserModelByUserNameAsync(deletedUser);
             if (dbModifiedUser == null)
             {
-                response.ErrorMessage = $"Could not find user '{deletedUser.UserName}'";
+                response.ErrorMessage = $"Could not find user '{deletedUser.UserName}'.";
+            }
+            else if (currentUser.UserName == deletedUser.UserName)
+            {
+                response.ErrorMessage = $"User '{deletedUser.UserName}' cannot delete self.'";
             }
             else
             {
@@ -264,7 +330,12 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(newUser);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+            if (currentUser == null)
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
 
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
             FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
 
             var response = new ResponseModel { Success = false };
@@ -279,7 +350,7 @@ namespace Fiasm.Core.Services.ExternalServices
             }
             else
             {
-                dbContext.Users.Add(new User
+                var dbUser = new User
                 {
                     UserName = newUser.UserName,
                     EmailAddress = newUser.EmailAddress,
@@ -288,7 +359,18 @@ namespace Fiasm.Core.Services.ExternalServices
                     IsPasswordReseting = false,
                     IsPasswordResetRequired = true,
                     IsActive = true
+                };
+                dbContext.Users.Add(dbUser);
+                await dbContext.SaveChangesAsync();
+
+                var dbAuthUserClaim = dbContext.Claims.Single(c => c.ClaimType == ClaimTypes.AuthorizedUser.ToString());
+                dbContext.UserClaims.Add(new UserClaim
+                {
+                    User = dbUser,
+                    Claim = dbAuthUserClaim
                 });
+                await dbContext.SaveChangesAsync();
+
                 dbContext.UserChangeLogs.Add(new UserChangeLog
                 {
                     ChangedByUserId = currentUser.UserId,
@@ -297,19 +379,30 @@ namespace Fiasm.Core.Services.ExternalServices
                     ChangedUserId = currentUser.UserId
                 });
                 await dbContext.SaveChangesAsync();
+
                 response = new ResponseModel { Success = true };
             }
 
             return response;
         }
 
+        /// <summary>
+        /// Get all claims in the system. This method requires the loggedInUser to have the 
+        /// AuthorizedUser and AuthorizedToDoUserAdministration claims.
+        /// </summary>
+        /// <param name="loggedInUser"></param>
+        /// <returns></returns>
         public async Task<IEnumerable<ClaimModel>> GetClaimsAsync(UserModel loggedInUser)
         {
             FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+            if (currentUser == null)
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
 
-            // only a user admin should be able to see permissions
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
             FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
 
             return await dbContext.Claims.Select(c => mapper.Map<ClaimModel>(c)).ToListAsync();
@@ -320,8 +413,12 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+            if (currentUser == null)
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
 
-            // only a user admin should be able to see permissions
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
             FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
 
             return currentUser.UserClaims.Select(c => mapper.Map<ClaimModel>(c));
@@ -332,6 +429,13 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+            if (currentUser == null)
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
+
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
 
             var response = new ResponseModel { Success = false };
 
@@ -360,7 +464,7 @@ namespace Fiasm.Core.Services.ExternalServices
                 dbContext.UserChangeLogs.Add(new UserChangeLog
                 {
                     ChangedByUserId = currentUser.UserId,
-                    ChangeDesc = $"Add claim to user; UserName = {userToModify.UserName}, claimType = '{claimToAdd.ClaimType}'.",
+                    ChangeDesc = $"Add claim to user; UserName = '{userToModify.UserName}', claimType = '{claimToAdd.ClaimType}'.",
                     ModifiedOn = DateTime.Now,
                     ChangedUserId = currentUser.UserId
                 });
@@ -376,6 +480,13 @@ namespace Fiasm.Core.Services.ExternalServices
             FiasmErrorHandling.VerifyArgNotNull(loggedInUser);
 
             var currentUser = await GetLoggedInUserFromUserModelAsync(loggedInUser);
+            if (currentUser == null)
+            {
+                throw new ArgumentException($"Could not find logged.");
+            }
+
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedUser);
+            FiasmErrorHandling.VerifyUserPermission(currentUser, ClaimTypes.AuthorizedToDoUserAdministration);
 
             var response = new ResponseModel { Success = false };
 
@@ -395,13 +506,18 @@ namespace Fiasm.Core.Services.ExternalServices
             {
                 response.ErrorMessage = $"The user '{modifiedUser.UserName}' does not have claim type '{claimToRemove.ClaimType}'.";
             }
+            else if (currentUser.UserName == userToModify.UserName &&
+                claimToRemove.ClaimType == ClaimTypes.AuthorizedToDoUserAdministration.ToString())
+            {
+                response.ErrorMessage = $"User '{userToModify.UserName} cannot remove claim '{ClaimTypes.AuthorizedToDoUserAdministration}' from self.";
+            }
             else
             {
                 dbContext.UserClaims.Remove(userClaim);
                 dbContext.UserChangeLogs.Add(new UserChangeLog
                 {
                     ChangedByUserId = currentUser.UserId,
-                    ChangeDesc = $"Remove claim from user; UserName = {userToModify.UserName}, claimType = '{claimToRemove.ClaimType}'.",
+                    ChangeDesc = $"Remove claim from user; UserName = '{userToModify.UserName}', claimType = '{claimToRemove.ClaimType}'.",
                     ModifiedOn = DateTime.Now,
                     ChangedUserId = currentUser.UserId
                 });
