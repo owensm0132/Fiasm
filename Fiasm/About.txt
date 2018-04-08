@@ -1,0 +1,153 @@
+﻿This application is intended to be to support the inventory and sales management
+needs for a small retail business - 1 to 10 employees. It is generic as most retiail
+businesses have the same needs.
+
+The use of a .net framework with EF code first and angular front-end was not derived from
+an architectural requirements, rather it was chosen because I wanted to learn it better. The
+rest of this document is meant to derive the entity models and architecture modules based 
+on the use cases.
+
+Architecture 
+
+Use Cases:
+
+- view/edit users
+	1. the user can search for existing application users and view their information
+	2. the user (if they are authorized to) can change the existing user's information or delete their account
+	3. the user (if they are authorized to) can create new users. I hate passwords sent to me in email
+		so the new user will recieve a text message indicating (if the application is configured with an sms
+		service in the configuration) or the account manager will have to communicate with the new user the
+		login information. The first time a user logs in they will be prompted to change their password
+	4. all users will have to enter a user name and password in order to login. No support will be implmented
+		for third party authentication - its too tacky.
+	5. if the user does not remember their password the can get it reset using either an email link or a
+		text message (if the application is configured for one)
+
+- view/edit inventory items
+	1. the user can search for inventory items bases on item properties
+	2. the user is presented with a list of search results
+	3. the user a select one, and without navigating away from the search results,
+		is presented with some basic inventory data: inventory count, vender price, thumbnail
+	4. the user can enter edit mode to change the inventory count and the changes will be
+		save upon exiting edit mode.
+	5. the user can douple click an item in the search results (or click a details button) to
+		open to a full detailed page of the item - showing all the items properties.
+	6. the user can enter edit mode to change any of the properties off the item and the 
+		changes will be saved when the user exists the edit mode or navigates away.
+
+- create new inventory items
+	1. the user can enter a 'new item' screen either by a menu button or by clicking a duplicate
+		item button on the item details page of an existing item.
+	2. the user will now be in the item details page in edit mode and will not be abel to exit
+		edit mode until all the required fields (indicated in the  UI somehow) are filled in.
+	3. the use can save changes to enter into view mode.
+
+- the above view/edit/create features for items will also be available for products. But a product
+	does not necessarily have to exist to create one in the system. And if its components exists 
+	it could even be listed.
+
+- view/edit product listing
+	1. the user can view listed products and sort them by; name, list price, list date
+	2. the user can view the details of any one listing by clicking on a dtails button
+	3. in the details section the user view all of the details of a listing and can go
+		into edit mode to change any of the values.
+	4. in the details the user can navigate down or up the details of the composit items or 
+		composit products
+
+- create a new product listing
+	1. the user can create a new product listing from a menu button
+	2. this will take the user to the detailed section of the product screen in edit
+		mode with nothing filled out (similar to the new item screen).
+	3. the user will not be able to exist edit mode until all the required fields are filled
+		in.
+
+- summary
+	1. this basic screen will the summary of listed products and any custom warnings
+
+- user settings
+	1. the user will be able to search for users based on name and/or roles and be presented
+		with a grid of users that match the search parameters
+	2. the user can double click on a row (or press the modify button) to open a detailed page
+		of the user
+	3. the user can enter edit mode to change any of the settings (if they have edit user role).
+	4. the user can also create a new user from the menu (if they have create user role) which 
+		will open the edit user screen with blank settings.
+
+Entities:
+- User
+	UserId
+	Name
+	Email
+	Password
+	Cellphone - for two factor authentication
+	Claims - list of claims the user has
+
+- Claim
+	ClaimType,
+	ClaimValue
+
+-Item - items are things that are purchased in whole from venders
+	ItemID
+	Name
+	Description
+	InventoryCount - if there are more than one inventory locations that need to be tracked
+		separately then a new item can be created for each separate location.
+	Vender - an item can only have one vender (based on VenderID), if the same item can be
+		purchased from vender then it should be a different item
+	Cost - vender price. If the vender has different prices (maybe for different shipping methods)
+			then a different item should be created for each price point.
+	ShippingTime
+	Issues - free-form text
+	Thumb - a store front quality thumbnail
+	Images - 1 or more store front quality images
+	Popularity - # from 1 to 10.
+
+-Product - products are things that are made
+	ProductID
+	Name
+	Description
+	CompositeItemList - a list of all items (by ItemID) that go into this product
+	CompositeProductList - a list of all products (by ProductID)that go into this product
+	TotalComponentItemCosts - the total cost of all the items that make up this product
+	AssemblyTime - rough estimate of time to make this product
+	Weight
+	SuggestedRetailPrice
+	Markup - the profit margin based on suggested retail price - not including delivery costs
+	Thumbnail - a store quality thumbnail
+	Images - 1 or more store quality images
+	ListingCount - the number of these products listed for sale. 
+	Popularity - # from 1 to 10.
+
+-Listing - an individual store listing
+	ProductID
+	ListingDate
+	ListingPrice
+	ListingState - one of; listed, on hold, sold, in delivery, delivered
+	ListingHistory - historical records of the list state changes and their dates
+	FinalSalesPrice
+	DeliveryCosts
+	SalesTaxAmount
+	SalesTaxState
+
+-Vender
+	VenderID
+	Name
+	Description
+	Notes
+
+
+implementation details:
+used the following reference to get angular o version 5: https://www.codeproject.com/Articles/1221503/Angular-and-NET-Core-with-Visual-Studio
+
+
+The architecture is pretty straightforward. There are 3 modules (3 layers - 2 tiers);
+	Presentations: the Fiasm project
+	Domain (business logic): the Fiasm-Core project
+	Repository (presistence): the Fiasm-Reposity project
+
+Even though "uncle Bob" recommends that applications should have their dependency graph point inward - toward the
+core entities, I feel that creating an interface layer between EF and the core business logic is not needed.
+So, this project will have the standard top down dependency graph; presentation -> business logic -> data persistence.
+The main thing to keep in mind when architecting is to separate out the things that change allot (ie. view models) 
+from things that do not (or should not) change allot (ie entity models), and to try really hard to create interfaces
+that do not change much through the development process.
